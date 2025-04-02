@@ -25,45 +25,43 @@ fn draw_current_scene(mut state:SceneState, render:renderer::Renderer) -> render
 fn game_loop(mut render:renderer::Renderer) -> renderer::Renderer {
     let default_width: usize = 10;
     let default_height: usize = 30;
-    let mut grid = Logic::GameGrid{field:vec![vec![TileType::NONE; default_height]; default_width], width:default_width, height:default_height, marked_tiles:vec![], current_shape:Logic::TileType::NONE};
-
+    let mut grid = Logic::GameGrid{field:vec![vec![TileType::NONE; default_width]; default_height], width:default_width, height:default_height, marked_tiles:vec![], current_shape:Logic::TileType::NONE};
     // todo fix on window should close
     while !render.handle.window_should_close() {
         
         // clear full lines
-        // let full_lines = Logic::check_lines(&grid);
-        // if !full_lines.is_empty() {
-        //     grid = Logic::remove_and_shrink_lines(grid, full_lines);
-        // }
-        // // generate a new one 
-        // if grid.current_shape == TileType::NONE {
-        //     grid.current_shape = Logic::get_new_tile();
-        //     grid.marked_tiles = Logic::get_new_tile_shape(&grid.current_shape, &grid.width);
-        // } else {
-        //     // is piece set
-        //     if check_if_shape_is_set(&grid) {
+        let full_lines = Logic::check_lines(&grid);
+        if !full_lines.is_empty() {
+            grid = Logic::remove_and_shrink_lines(grid, full_lines);
+        }
+        // generate a new one 
+        if grid.current_shape == TileType::NONE {
+            grid.current_shape = Logic::get_new_tile();
+            grid.marked_tiles = Logic::get_new_tile_shape(&grid.current_shape, &grid.width);
+        } else {
+            // is piece set
+            if check_if_shape_is_set(&grid) {
 
-        //         for marked_coordinate in &grid.marked_tiles {
-        //             grid.field[marked_coordinate.y][marked_coordinate.x] = grid.current_shape;
-        //         }
-        //         grid.current_shape = TileType::NONE;
-        //         grid.marked_tiles.clear();
+                for marked_coordinate in &grid.marked_tiles {
+                    grid.field[marked_coordinate.y][marked_coordinate.x] = grid.current_shape;
+                }
+                grid.current_shape = TileType::NONE;
+                grid.marked_tiles.clear();
 
-        //         if check_if_game_ends(&grid){
-        //             break;
-        //         }
-        //     } else {
-        //         // if not, move one down
-        //         for marked_coordinate in grid.marked_tiles.iter_mut() {
-        //             marked_coordinate.y += 1;
-        //         }
-        //     }
+                if check_if_game_ends(&grid){
+                    break;
+                }
+            } else {
+                // if not, move one down
+                for marked_coordinate in grid.marked_tiles.iter_mut() {
+                    marked_coordinate.y += 1;
+                }
+            }
 
-        // }
+        }
 
         // todo draw game state
-        
-        render = render.draw_game_scene(&grid);
+        renderer::Renderer::draw_game_scene(& mut render, &grid);
 
     }
     render.scene_state = SceneState::AFTERGAME;

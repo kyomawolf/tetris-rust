@@ -1,4 +1,4 @@
-use raylib::prelude::*;
+use raylib::{ffi::TextToUpper, prelude::*};
 
 use crate::{Logic::GameGrid, TileType};
 
@@ -7,7 +7,7 @@ const GAME_BORDER:f32 = 10.0;
 const GAME_BORDER_THICKNESS:f32 = 4.0;
 const GAME_TILE_SIZE:f32 = 30.0;
 
-const GAME_SPRITE_PATH:&str = "../sprites";
+const GAME_SPRITE_PATH:&str = "/home/kyomawolf/Code/rust/tetris/sprites";
 const GAME_SPRITE_LRIGHT:&str = "sprite_tetris_0.png";
 const GAME_SPRITE_LLEFT:&str = "sprite_tetris_1.png";
 const GAME_SPRITE_SLEFT:&str = "sprite_tetris_2.png";
@@ -45,13 +45,13 @@ impl GameTextures {
     fn create(handle:& mut RaylibHandle, thread:&RaylibThread) -> Result<GameTextures, String> {
     let path = GAME_SPRITE_PATH.to_owned();
         return Ok(GameTextures{
-            lright:(handle.load_texture(&thread, &(path.clone() + GAME_SPRITE_LRIGHT))?),
-            lleft:(handle.load_texture(&thread, &(path.clone() + GAME_SPRITE_LLEFT))?),
-            sleft:(handle.load_texture(&thread, &(path.clone() + GAME_SPRITE_SLEFT))?),
-            sright:(handle.load_texture(&thread, &(path.clone() + GAME_SPRITE_SRIGHT))?),
-            tshape:(handle.load_texture(&thread, &(path.clone() + GAME_SPRITE_TSHAPE))?),
-            ishape:(handle.load_texture(&thread, &(path.clone() + GAME_SPRITE_ISHAPE))?),
-            square:(handle.load_texture(&thread, &(path.clone() + GAME_SPRITE_SQUARE))?)
+            lright:(handle.load_texture(&thread, &(path.clone() + "/" + GAME_SPRITE_LRIGHT))?),
+            lleft:(handle.load_texture(&thread, &(path.clone() + "/" + GAME_SPRITE_LLEFT))?),
+            sleft:(handle.load_texture(&thread, &(path.clone() + "/" + GAME_SPRITE_SLEFT))?),
+            sright:(handle.load_texture(&thread, &(path.clone() + "/" + GAME_SPRITE_SRIGHT))?),
+            tshape:(handle.load_texture(&thread, &(path.clone() + "/" + GAME_SPRITE_TSHAPE))?),
+            ishape:(handle.load_texture(&thread, &(path.clone() + "/" + GAME_SPRITE_ISHAPE))?),
+            square:(handle.load_texture(&thread, &(path.clone() + "/" + GAME_SPRITE_SQUARE))?)
         })
     }
 }
@@ -67,7 +67,7 @@ pub (crate)struct Renderer {
     pub thread:RaylibThread
 }
 
-fn draw_background(mut draw_handle:RaylibDrawHandle, properties:GameWindowProperties) {
+fn draw_background(draw_handle: & mut RaylibDrawHandle, properties:GameWindowProperties) {
     // background
     
     draw_handle.clear_background(Color::BLACK);
@@ -83,11 +83,11 @@ fn draw_background(mut draw_handle:RaylibDrawHandle, properties:GameWindowProper
 
     // draw test cube
 
-    draw_handle.draw_rectangle(50, 50, 30, 30, Color::RED);
+    // draw_handle.draw_rectangle(50, 50, 30, 30, Color::RED);
 
-    let rect = Rectangle::new(50.0, 50.0, 30.0, 30.0);
-    draw_handle.draw_rectangle(50, 50, 30, 30, Color::RED);
-    draw_handle.draw_rectangle_lines_ex(rect, 5.0, Color::WHITE);
+    // let rect = Rectangle::new(50.0, 50.0, 30.0, 30.0);
+    // draw_handle.draw_rectangle(50, 50, 30, 30, Color::RED);
+    // draw_handle.draw_rectangle_lines_ex(rect, 5.0, Color::WHITE);
 }
 impl Renderer {
     pub fn create(new_width:i32, new_height:i32, new_title:String) -> Result<Renderer, String> {
@@ -113,24 +113,46 @@ impl Renderer {
         return self;
     }
 
-    fn get_tile_for_texture(mut base_image:Image, x:f32, y:f32, color:Color) -> Image {
+    // todo make it to be on self.
+    fn draw_tile_coordinate(draw_handle:& mut RaylibDrawHandle,
+                            properties:GameWindowProperties, 
+                            textures:&GameTextures, 
+                            grid_x:i32, grid_y:i32, 
+                            tile_type: TileType) {
 
-
-        let rect = Rectangle::new(x, y, GAME_TILE_SIZE, GAME_TILE_SIZE);
-        base_image.draw_rectangle(x as i32, y as i32, GAME_TILE_SIZE as i32, GAME_TILE_SIZE as i32, color);
-        base_image.draw_rectangle_lines(rect, 5, Color::BLACK);
-        return base_image
+        let texture = match tile_type {
+            TileType::LRIGHT => &textures.lright,
+            TileType::LLEFT => &textures.lleft,
+            TileType::SLEFT => &textures.sleft,
+            TileType::SRIGHT => &textures.sright,
+            TileType::TSHAPE => &textures.tshape,
+            TileType::ISHAPE => &textures.ishape,
+            TileType::SQUARE => &textures.square,
+            TileType::NONE => return,
+        };
+        let x = (grid_x as f32 * GAME_TILE_SIZE) + properties.margin_game.x; 
+        let y = (grid_y as f32 * GAME_TILE_SIZE) + properties.margin_game.y; 
+        let pos =Vector2::new(x, y);
+        draw_handle.draw_texture_ex(texture, pos,0.0, 3.0,  Color::WHITE);
     }
 
     // todo high performace, compare old vs new game state
-    fn draw_tiles(mut draw_handle:RaylibDrawHandle, properties:GameWindowProperties, game:&GameGrid) {
-        ;
+    fn draw_tiles(draw_handle:& mut RaylibDrawHandle, properties:GameWindowProperties, textures:&GameTextures, game:&GameGrid) {
+        for y in 0..game.height {
+            for x in 0..game.width {
+                Self::draw_tile_coordinate(draw_handle, properties, &textures, x as i32, y as i32, game.field[y][x]);
+            } 
+        }
+
+        for idx in &game.marked_tiles {
+            Self::draw_tile_coordinate(draw_handle, properties, &textures, idx.x as i32, idx.y as i32, game.current_shape);
+        }
     }
 
-    pub fn draw_game_scene(mut self, game:&GameGrid) -> Renderer {
-        let draw_handle: RaylibDrawHandle = self.handle.begin_drawing(&self.thread);
+    pub fn draw_game_scene(render:& mut Renderer, game:&GameGrid) {
+        let mut draw_handle: RaylibDrawHandle = render.handle.begin_drawing(&render.thread);
     
-        draw_background(draw_handle, self.props);
-        return self;
+        draw_background(&mut draw_handle, render.props);
+        Self::draw_tiles(&mut draw_handle, render.props, &render.textures, game);
     }
 }
