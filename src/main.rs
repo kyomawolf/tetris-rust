@@ -24,7 +24,7 @@ fn draw_current_scene(mut state:SceneState, render:renderer::Renderer) -> render
 
 fn game_loop(mut render:renderer::Renderer) -> renderer::Renderer {
     let default_width: usize = 10;
-    let default_height: usize = 30;
+    let default_height: usize = 25;
     let mut grid = Logic::GameGrid{field:vec![vec![TileType::NONE; default_width]; default_height], width:default_width, height:default_height, marked_tiles:vec![], current_shape:Logic::TileType::NONE};
     // todo fix on window should close
     while !render.handle.window_should_close() {

@@ -153,6 +153,11 @@ pub (crate) fn check_if_shape_is_set(grid: &GameGrid) -> bool {
         if idx.y == lowest {
             return true;
         }
+
+        if idx.y == 0 || idx.x == 0 {
+            return false;
+        }
+
         // check if there are filled tiles below the shape 
         if grid.field[idx.y - 1][idx.x] != TileType::NONE {
             return true;
