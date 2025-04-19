@@ -111,8 +111,8 @@ pub (crate) fn check_lines (grid: &GameGrid) -> Vec<bool> {
 
     for y in 0..grid.height {
         for x in 0..grid.width {
-            if grid.field[y][x] != TileType::NONE {
-                ret_vec[x] = false;
+            if grid.field[y][x] == TileType::NONE {
+                ret_vec[y] = false;
                 break;
             }
         }
@@ -125,6 +125,7 @@ pub (crate) fn remove_and_shrink_lines(mut grid: GameGrid, full_lines: Vec<bool>
     // let mut ret_grid = grid.clone();
     for y in 0..grid.height {
         if full_lines[y] {
+            println!("Cleared a line!");
             for x in 0..grid.width {
                 grid.field[y][x] = TileType::NONE;
             }
@@ -145,21 +146,23 @@ pub (crate) fn remove_and_shrink_lines(mut grid: GameGrid, full_lines: Vec<bool>
 pub (crate) fn check_if_shape_is_set(grid: &GameGrid) -> bool {
     let mut lowest :usize = grid.height - 1;
     lowest -= 1;
+
     if grid.current_shape == TileType::NONE {
         return true;
     }
     for idx in &grid.marked_tiles {
+        println!("lowest number calc {lowest} actual number {}", idx.y);
         // check if the shape is at bottom of the game
         if idx.y == lowest {
             return true;
         }
 
-        if idx.y == 0 || idx.x == 0 {
-            return false;
+        if idx.y == 0 {
+            continue;
         }
 
         // check if there are filled tiles below the shape 
-        if grid.field[idx.y - 1][idx.x] != TileType::NONE {
+        if grid.field[idx.y + 1][idx.x] != TileType::NONE {
             return true;
         }
     }

@@ -21,6 +21,17 @@ fn draw_current_scene(mut state:SceneState, render:renderer::Renderer) -> render
         }
 }
 
+fn handle_input(raylib_handle: & mut RaylibHandle) -> raylib::ffi::KeyboardKey {
+    let key = raylib_handle.get_key_pressed();
+    return key.or(Some(ffi::KeyboardKey::KEY_NULL)).expect("could not read input");
+}
+
+fn next_step(key: ffi::KeyboardKey) -> bool {
+    if key == ffi::KeyboardKey::KEY_ENTER {
+        return true;
+    }
+    return false;
+}
 
 fn game_loop(mut render:renderer::Renderer) -> renderer::Renderer {
     let default_width: usize = 10;
@@ -29,35 +40,39 @@ fn game_loop(mut render:renderer::Renderer) -> renderer::Renderer {
     // todo fix on window should close
     while !render.handle.window_should_close() {
         
-        // clear full lines
-        let full_lines = Logic::check_lines(&grid);
-        if !full_lines.is_empty() {
-            grid = Logic::remove_and_shrink_lines(grid, full_lines);
-        }
-        // generate a new one 
-        if grid.current_shape == TileType::NONE {
-            grid.current_shape = Logic::get_new_tile();
-            grid.marked_tiles = Logic::get_new_tile_shape(&grid.current_shape, &grid.width);
-        } else {
-            // is piece set
-            if check_if_shape_is_set(&grid) {
+        let pressed_key = handle_input(&mut render.handle);
 
-                for marked_coordinate in &grid.marked_tiles {
-                    grid.field[marked_coordinate.y][marked_coordinate.x] = grid.current_shape;
-                }
-                grid.current_shape = TileType::NONE;
-                grid.marked_tiles.clear();
-
-                if check_if_game_ends(&grid){
-                    break;
-                }
+        // logic
+        if next_step(pressed_key) {
+            // clear full lines
+            let full_lines = Logic::check_lines(&grid);
+                if !full_lines.is_empty() {
+                    grid = Logic::remove_and_shrink_lines(grid, full_lines);
+            }
+            // generate a new one 
+            if grid.current_shape == TileType::NONE {
+                grid.current_shape = Logic::get_new_tile();
+                grid.marked_tiles = Logic::get_new_tile_shape(&grid.current_shape, &grid.width);
             } else {
-                // if not, move one down
-                for marked_coordinate in grid.marked_tiles.iter_mut() {
-                    marked_coordinate.y += 1;
+                // is piece set
+                if check_if_shape_is_set(&grid) {
+                    
+                    for marked_coordinate in &grid.marked_tiles {
+                        grid.field[marked_coordinate.y][marked_coordinate.x] = grid.current_shape;
+                    }
+                    grid.current_shape = TileType::NONE;
+                    grid.marked_tiles.clear();
+                    
+                    if check_if_game_ends(&grid){
+                        break;
+                    }
+                } else {
+                    // if not, move one down
+                    for marked_coordinate in grid.marked_tiles.iter_mut() {
+                        marked_coordinate.y += 1;
+                    }
                 }
             }
-
         }
 
         // todo draw game state
